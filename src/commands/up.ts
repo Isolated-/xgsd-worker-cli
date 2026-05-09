@@ -86,7 +86,7 @@ export default class Up extends Command {
         },
       })
 
-      this.log(`server is running in the background (pid: ${child.pid})\nuse \`xgsd down\` to exit the server`)
+      this.log(`server is running in the background (pid: ${child.pid})`)
 
       child.unref()
     } else {

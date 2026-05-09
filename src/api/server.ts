@@ -4,7 +4,10 @@ import {getWorkerConfig, resolveDependency} from '../util'
 import {writeFileSync} from 'fs'
 import {ensureDirSync} from 'fs-extra'
 import {basename, dirname, join} from 'path'
-
+import {WorkerConfig} from '@xgsd/workers'
+import {WorkerConfigSchema} from '../validation'
+import {parse} from 'valibot'
+import {createHash} from 'crypto'
 type Json = Record<string, any>
 
 function readBody(req: IncomingMessage): Promise<Json> {
@@ -38,7 +41,7 @@ export async function startDaemon(opts: any) {
   const port = opts.port ?? 3010
   const pidPath = opts.pidPath
 
-  const app = createServer(opts)
+  const app = await createServer(opts)
 
   ensureDirSync(dirname(pidPath))
   writeFileSync(pidPath, String(process.pid))
@@ -58,7 +61,7 @@ export async function startDaemon(opts: any) {
   process.on('SIGTERM', shutdown)
 }
 
-export function createServer(opts: {
+export async function createServer(opts: {
   concurrency?: number
   env?: Record<string, unknown>
   cwd?: string
@@ -70,6 +73,23 @@ export function createServer(opts: {
     throw new Error('expected config path and cwd')
   }
 
+  // preload
+  function hashConfig(config: any): string {
+    return createHash('sha256').update(JSON.stringify(config)).digest('hex')
+  }
+
+  function createHandlerWrapper(config: WorkerConfig) {
+    return createHandler(config, (config: WorkerConfig) => {
+      return parse(WorkerConfigSchema, config)
+    })
+  }
+
+  const {createHandler} = resolveDependency('@xgsd/workers', cwd)
+
+  let config = await getWorkerConfig(configPath)
+  let hash = hashConfig(config)
+  let handler = createHandlerWrapper(config)
+
   return http.createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
 
@@ -80,7 +100,29 @@ export function createServer(opts: {
     if (url.pathname === '/run' && req.method === 'POST') {
       const body = await readBody(req)
       // TODO: cache this
-      const config = await getWorkerConfig(configPath)
+      const config = (await getWorkerConfig(configPath)) as WorkerConfig
+
+      const {strategy} = config.http?.cache!
+
+      if (strategy === 'always') {
+        console.log(`[http cache] using cache config as cache.strategy = always`)
+      }
+
+      if (!strategy || strategy === 'never') {
+        console.log(`[http cache] always refreshing config as cache.strategy = never`)
+        handler = createHandlerWrapper(config)
+      }
+
+      if (strategy === 'change') {
+        const cmp = hashConfig(config)
+
+        if (cmp !== hash) {
+          console.log(`[http cache] config change detected, config refreshed.`)
+          handler = createHandlerWrapper(config)
+        } else {
+          console.log(`[http cache] no config change detected, nothing to refresh.`)
+        }
+      }
 
       if (!config) {
         return send(res, 404, {
@@ -90,9 +132,6 @@ export function createServer(opts: {
         })
       }
 
-      const {createHandler} = resolveDependency('@xgsd/workers', cwd)
-
-      const handler = createHandler(config)
       const result = await handler({
         data: body ?? null,
         env: opts.env,

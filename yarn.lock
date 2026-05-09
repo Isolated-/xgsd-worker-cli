@@ -2640,10 +2640,8 @@
   resolved "https://registry.yarnpkg.com/@unrs/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-1.11.1.tgz#538b1e103bf8d9864e7b85cc96fa8d6fb6c40777"
   integrity sha512-lrW200hZdbfRtztbygyaq/6jP6AKE8qQN2KvPcJ+x7wiD038YtnYtZ82IMNJ69GJibV7bwL3y9FgK+5w/pYt6g==
 
-"@xgsd/workers@0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@xgsd/workers/-/workers-0.1.0.tgz#6ea8ad48cf4081e64be2f856f0a6661cbf0c6910"
-  integrity sha512-0hNqHzS1h4mlsQRqMc/EeOMJRaHGqEPMPurgJD2Ju2F4WhiWTFfw9c+CaVVlP57RJ63EvUlwYXe2wNn6PVvpzw==
+"@xgsd/workers@../xgsd-workers":
+  version "0.1.0-beta.0"
 
 acorn-jsx@^5.3.2:
   version "5.3.2"
@@ -6905,6 +6903,11 @@ v8-to-istanbul@^9.0.1:
     "@jridgewell/trace-mapping" "^0.3.12"
     "@types/istanbul-lib-coverage" "^2.0.1"
     convert-source-map "^2.0.0"
+
+valibot@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/valibot/-/valibot-1.4.0.tgz#a27e48893af13834ae9dcf4f7e4b05cc7821ef35"
+  integrity sha512-iC/x7fVcSyOwlm/VSt7RlHnzNGLGvR9GnxdifUeWoCJo0q4ZZvrVkIHC6faTlkxG47I2Y4UrFquPuVHCrOnrLg==
 
 validate-npm-package-license@^3.0.1, validate-npm-package-license@^3.0.4:
   version "3.0.4"

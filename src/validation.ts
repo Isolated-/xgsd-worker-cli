@@ -11,12 +11,22 @@ export const WorkerConfigSchema = v.object({
 
       cache: v.optional(
         v.object({
-          strategy: v.optional(v.union([v.literal('always'), v.literal('change'), v.literal('never')]), undefined),
+          strategy: v.optional(v.union([v.literal('always'), v.literal('change'), v.literal('never')]), 'never'),
         }),
         {},
       ),
     }),
     {},
+  ),
+
+  http: v.optional(
+    v.object({
+      cache: v.optional(
+        v.object({
+          strategy: v.optional(v.union([v.literal('always'), v.literal('change'), v.literal('never')]), 'never'),
+        }),
+      ),
+    }),
   ),
 
   limits: v.optional(
