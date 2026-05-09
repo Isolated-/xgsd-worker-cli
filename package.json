@@ -1,0 +1,77 @@
+{
+  "name": "@xgsd/worker-cli",
+  "description": "A CLI for running @xgsd/workers",
+  "version": "0.1.0-beta.0",
+  "author": "Michael Palmer",
+  "bin": {
+    "worker": "./bin/run.js"
+  },
+  "bugs": "https://github.com/Isolated-/xgsd-worker-cli/issues",
+  "dependencies": {
+    "@oclif/core": "^4",
+    "@oclif/plugin-help": "^6",
+    "@oclif/plugin-version": "^2.2.43",
+    "@xgsd/workers": "../xgsd-workers",
+    "fs-extra": "^11.3.5"
+  },
+  "peerDependencies": {
+    "@xgsd/engine": "^1.0.0-stable",
+    "@xgsd/workers": "^0.1.0-beta.1",
+    "esbuild": "^0.28.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1",
+    "@oclif/prettier-config": "^0.2.1",
+    "@oclif/test": "^4",
+    "@types/chai": "^4",
+    "@types/fs-extra": "^11.0.4",
+    "@types/mocha": "^10",
+    "@types/node": "^18",
+    "@types/pidusage": "^2.0.5",
+    "chai": "^4",
+    "eslint": "^9",
+    "eslint-config-oclif": "^6",
+    "eslint-config-prettier": "^10",
+    "mocha": "^10",
+    "oclif": "^4",
+    "shx": "^0.3.3",
+    "ts-node": "^10",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "./bin",
+    "./dist",
+    "./oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/Isolated-/xgsd-worker-cli",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "oclif": {
+    "bin": "worker",
+    "dirname": "xgsd-worker",
+    "commands": "./dist/commands",
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-version"
+    ],
+    "topicSeparator": " ",
+    "manifest": true
+  },
+  "repository": "https://github.com/Isolated-/xgsd-worker-cli",
+  "scripts": {
+    "build": "shx rm -rf dist && tsc -b",
+    "lint": "eslint",
+    "postpack": "shx rm -f oclif.manifest.json",
+    "posttest": "npm run lint",
+    "prepack": "oclif manifest && oclif readme",
+    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "version": "oclif readme && git add README.md"
+  },
+  "types": "dist/index.d.ts"
+}
