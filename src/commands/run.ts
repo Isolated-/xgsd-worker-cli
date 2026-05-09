@@ -23,6 +23,7 @@ export default class Run extends Command {
   public async run(): Promise<any> {
     const {args, flags} = await this.parse(Run)
 
+    const start = performance.now()
     let env: Record<string, any> = {}
     const {data, environment} = flags
 
@@ -58,9 +59,14 @@ export default class Run extends Command {
         cwd,
       })
 
-      this.log(`[cli] execution completed in ${result.duration.toFixed(2)} ms`)
+      const dt = result?.duration ?? performance.now() - start
+      this.log(`[cli] execution completed in ${dt.toFixed(2)} ms`)
 
-      this.logJson(result)
+      if (typeof result === 'object') {
+        this.logJson(result)
+      } else {
+        this.log(result ?? 'no output data')
+      }
     } catch (error: any) {
       console.log(error)
     }
