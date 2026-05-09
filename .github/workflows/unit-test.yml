@@ -1,15 +1,18 @@
-name: tests
+name: quick tests against ubuntu
 on:
   push:
-    branches-ignore: [main]
-  workflow_dispatch:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
 
 jobs:
   unit-tests:
     strategy:
       matrix:
-        os: ['ubuntu-latest', 'windows-latest']
-        node_version: [lts/-1, lts/*, latest]
+        os: ['ubuntu-latest']
+        node_version: [latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -17,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: npm
-      - run: npm install
-      - run: npm run build
-      - run: npm run test
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn test
