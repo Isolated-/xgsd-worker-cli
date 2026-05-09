@@ -1,6 +1,9 @@
 import http, {IncomingMessage, ServerResponse} from 'http'
 import {URL} from 'url'
 import {getWorkerConfig, resolveDependency} from '../util'
+import {writeFileSync} from 'fs'
+import {ensureDirSync} from 'fs-extra'
+import {basename, dirname, join} from 'path'
 
 type Json = Record<string, any>
 
@@ -29,6 +32,30 @@ function readBody(req: IncomingMessage): Promise<Json> {
 function send(res: ServerResponse, status: number, payload: unknown) {
   res.writeHead(status, {'Content-Type': 'application/json'})
   res.end(JSON.stringify(payload))
+}
+
+export async function startDaemon(opts: any) {
+  const port = opts.port ?? 3010
+  const pidPath = opts.pidPath
+
+  const app = createServer(opts)
+
+  ensureDirSync(dirname(pidPath))
+  writeFileSync(pidPath, String(process.pid))
+
+  app.listen(port, opts.host ?? 'localhost', () => {
+    console.log(`[xGSD daemon] running on :${port}`)
+  })
+
+  const shutdown = async () => {
+    console.log('[xGSD daemon] shutting down...')
+    app.close(() => {
+      process.exit(0)
+    })
+  }
+
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
 }
 
 export function createServer(opts: {
