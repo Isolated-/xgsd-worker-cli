@@ -90,7 +90,7 @@ export default class Up extends Command {
 
       child.unref()
     } else {
-      const server = createServer({cwd, configPath})
+      const server = await createServer({cwd, configPath})
 
       server.listen(port, () => {
         this.log(`[api] running on http://localhost:${port}`)

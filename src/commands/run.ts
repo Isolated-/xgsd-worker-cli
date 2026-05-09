@@ -1,6 +1,9 @@
 import {Command, Flags} from '@oclif/core'
 import {dirname, resolve} from 'path'
 import {getWorkerConfig, resolveDependency} from '../util'
+import {WorkerConfig} from '@xgsd/workers'
+import {parse} from 'valibot'
+import {WorkerConfigSchema} from '../validation'
 
 export default class Run extends Command {
   static override description = 'describe the command here'
@@ -51,7 +54,9 @@ export default class Run extends Command {
     const {createHandler} = resolveDependency('@xgsd/workers', cwd)
 
     try {
-      const handler = createHandler(config)
+      const handler = createHandler(config, (config: WorkerConfig) => {
+        return parse(WorkerConfigSchema, config)
+      })
 
       const result = await handler({
         data,
