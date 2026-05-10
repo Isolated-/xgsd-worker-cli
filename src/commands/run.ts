@@ -1,9 +1,11 @@
 import {Command, Flags} from '@oclif/core'
-import {dirname, resolve} from 'path'
-import {getWorkerConfig, resolveDependency} from '../util'
+import {dirname, join, resolve} from 'path'
+import {createConsoleStreamWrapper, getWorkerConfig, resolveDependency} from '../util'
 import {WorkerConfig} from '@xgsd/workers'
 import {parse} from 'valibot'
 import {WorkerConfigSchema} from '../validation'
+import {Writable} from 'stream'
+import {createWriteStream} from 'fs'
 
 export default class Run extends Command {
   static override description = 'describe the command here'
@@ -53,10 +55,17 @@ export default class Run extends Command {
 
     const {createHandler} = resolveDependency('@xgsd/workers', cwd)
 
+    const signals = join(cwd, config.dist, 'signals.jsonl')
+    const stream = createConsoleStreamWrapper(signals)
+
+    const opts = {
+      config,
+      stream,
+      validator: (config: WorkerConfig) => parse(WorkerConfigSchema, config),
+    }
+
     try {
-      const handler = createHandler(config, (config: WorkerConfig) => {
-        return parse(WorkerConfigSchema, config)
-      })
+      const handler = createHandler(opts)
 
       const result = await handler({
         data,
@@ -73,6 +82,7 @@ export default class Run extends Command {
         this.log(result ?? 'no output data')
       }
     } catch (error: any) {
+      console.log('fatal error occurred')
       console.log(error)
     }
   }

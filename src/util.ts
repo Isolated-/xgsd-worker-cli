@@ -1,6 +1,7 @@
 import {createRequire} from 'module'
 import fs from 'fs-extra'
 import {join} from 'path'
+import {createWriteStream} from 'fs'
 
 export async function getWorkerConfig(path: string): Promise<any | null> {
   if (!fs.pathExists(path)) {
@@ -22,4 +23,25 @@ export function resolveDependency(dependency: string, projectRoot: string): any 
   throw new Error(
     `Could not resolve ${dependency}.\nInstall it with \`yarn add ${dependency}\`.\nPath: ${projectRoot}.`,
   )
+}
+
+export const createConsoleStreamWrapper = (path: string, opts: {mode: 'write' | 'append'} = {mode: 'append'}) => {
+  const flags = {flags: opts.mode === 'append' ? 'a' : 'w'}
+  const stream = createWriteStream(path, flags)
+
+  return {
+    write: (chunk: string) => {
+      const msg = JSON.parse(chunk.trim())
+
+      if (msg.type === 'error') {
+        console.error(`[error] ${msg.message ?? 'check logs'}`)
+      }
+
+      if (msg.message && msg.type !== 'error') {
+        console.log(`[signal] ${msg.message} (${msg.type})`)
+      }
+
+      stream.write(chunk)
+    },
+  }
 }

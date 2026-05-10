@@ -69,6 +69,8 @@ export async function createServer(opts: {
 }) {
   const {configPath, cwd} = opts
 
+  console.log(`[http] bound to ${cwd}`)
+
   if (!configPath || !cwd) {
     throw new Error('expected config path and cwd')
   }
