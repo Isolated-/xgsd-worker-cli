@@ -6,7 +6,7 @@ import {parse} from 'valibot'
 import {WorkerConfigSchema} from '../validation'
 
 export default class Run extends Command {
-  static override description = 'describe the command here'
+  static override description = 'Manually activates your Worker and streams logs to console'
   static override examples = ['<%= config.bin %> <%= command.id %>']
   static override flags = {
     data: Flags.string({
@@ -27,12 +27,12 @@ export default class Run extends Command {
     const {args, flags} = await this.parse(Run)
 
     const start = performance.now()
-    let env: Record<string, any> = {}
     const {data, environment} = flags
 
     const configPath = resolve(flags.config)
     const cwd = resolve(dirname(flags.config))
 
+    let env: Record<string, any> = {}
     ;(environment ?? []).map((e) => {
       const [key, value] = e.split('=')
 
@@ -44,8 +44,6 @@ export default class Run extends Command {
       env[key] = value
     })
 
-    // TODO: make this option
-    // load defaults with Joi
     const config = await getWorkerConfig(configPath)
     if (!config) {
       this.error(`config not found at ${configPath}`)

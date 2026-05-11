@@ -40,7 +40,7 @@ export function isBackgroundProcessRunning(path: string, pid?: number): number |
 
 export default class Up extends Command {
   static override args = {}
-  static override description = 'describe the command here'
+  static override description = 'Start a server to call your Worker over HTTP'
   static override examples = ['<%= config.bin %> <%= command.id %>']
   static override flags = {
     port: Flags.integer({char: 'p', default: 3000}),
