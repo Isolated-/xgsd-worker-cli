@@ -48,6 +48,12 @@ export default class Up extends Command {
     config: Flags.string({char: 'c', required: true}),
     detached: Flags.boolean({char: 'd', default: false}),
     force: Flags.boolean({char: 'f', default: false}),
+
+    down: Flags.boolean({
+      char: 's',
+      description: 'use this flag to stop background process',
+      default: false,
+    }),
   }
 
   public async run(): Promise<void> {
@@ -56,11 +62,28 @@ export default class Up extends Command {
 
     const configPath = resolve(flags.config)
     const cwd = dirname(configPath)
+
+    // this prevents many services/workers starting
+    // which is ok for an example CLI
     const pidPath = join(this.config.configDir, 'xgsd.pid')
+    const pid = isBackgroundProcessRunning(pidPath)
+
+    if (flags.down) {
+      if (pid) {
+        try {
+          process.kill(pid as number, 'SIGTERM')
+          rmSync(pidPath)
+        } catch (error) {}
+
+        this.log(`background service stopped`)
+        return
+      }
+
+      this.log(`background service not running - remove --down to bring it up`)
+      return
+    }
 
     if (flags.detached) {
-      const pid = isBackgroundProcessRunning(pidPath)
-
       if (pid && !flags.force) {
         this.error('service is already running in the background.\nUse `worker up -c {path} -f`.')
       }
