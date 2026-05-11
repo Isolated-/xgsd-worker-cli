@@ -45,3 +45,46 @@ export const createConsoleStreamWrapper = (path: string, opts: {mode: 'write' | 
     },
   }
 }
+
+import {readFileSync, existsSync} from 'fs'
+
+async function readStdin(): Promise<string> {
+  return new Promise((resolve) => {
+    let data = ''
+
+    process.stdin.setEncoding('utf8')
+
+    process.stdin.on('data', (chunk) => {
+      data += chunk
+    })
+
+    process.stdin.on('end', () => {
+      resolve(data)
+    })
+  })
+}
+
+export async function resolveInput(input?: string) {
+  // stdin
+  if (!input && !process.stdin.isTTY) {
+    const raw = await readStdin()
+
+    if (!raw.trim()) {
+      return null
+    }
+
+    return JSON.parse(raw)
+  }
+
+  if (!input) {
+    return null
+  }
+
+  // file path
+  if (existsSync(input)) {
+    return JSON.parse(readFileSync(input, 'utf8'))
+  }
+
+  // raw json
+  return JSON.parse(input)
+}
