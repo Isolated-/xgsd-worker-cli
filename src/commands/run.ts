@@ -83,7 +83,7 @@ export default class Run extends Command {
       stream = process.stdout
     }
 
-    if (!flags.silent) {
+    if (!flags.stdout && !flags.silent) {
       stream = createConsoleStreamWrapper(signals)
     }
 
