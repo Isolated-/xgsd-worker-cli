@@ -2640,8 +2640,10 @@
   resolved "https://registry.yarnpkg.com/@unrs/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-1.11.1.tgz#538b1e103bf8d9864e7b85cc96fa8d6fb6c40777"
   integrity sha512-lrW200hZdbfRtztbygyaq/6jP6AKE8qQN2KvPcJ+x7wiD038YtnYtZ82IMNJ69GJibV7bwL3y9FgK+5w/pYt6g==
 
-"@xgsd/workers@../xgsd-workers":
-  version "0.1.0-beta.0"
+"@xgsd/workers@0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@xgsd/workers/-/workers-0.1.2.tgz#e97c08e0e62e25322cb2bdb237b907b9808b3560"
+  integrity sha512-xNaoqwLBlFc3QLJGoFULLum5td2m9Kt3v8WegkD9ruYMgdO96/Jx8t65ufhp4+Obv++4WO+G01PaxRqxL34EVQ==
 
 acorn-jsx@^5.3.2:
   version "5.3.2"
