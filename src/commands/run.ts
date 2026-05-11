@@ -4,8 +4,6 @@ import {createConsoleStreamWrapper, getWorkerConfig, resolveDependency} from '..
 import {WorkerConfig} from '@xgsd/workers'
 import {parse} from 'valibot'
 import {WorkerConfigSchema} from '../validation'
-import {Writable} from 'stream'
-import {createWriteStream} from 'fs'
 
 export default class Run extends Command {
   static override description = 'describe the command here'

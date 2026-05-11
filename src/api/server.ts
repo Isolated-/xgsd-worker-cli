@@ -1,6 +1,6 @@
 import http, {IncomingMessage, ServerResponse} from 'http'
 import {URL} from 'url'
-import {getWorkerConfig, resolveDependency} from '../util'
+import {createConsoleStreamWrapper, getWorkerConfig, resolveDependency} from '../util'
 import {writeFileSync} from 'fs'
 import {ensureDirSync} from 'fs-extra'
 import {basename, dirname, join} from 'path'
@@ -61,6 +61,72 @@ export async function startDaemon(opts: any) {
   process.on('SIGTERM', shutdown)
 }
 
+type Opts = {
+  cwd: string
+  configPath: string
+}
+
+async function createHttpTransporter(opts: Opts) {
+  const {createHandler} = resolveDependency('@xgsd/workers', opts.cwd)
+  const {cwd, configPath} = opts
+
+  return {
+    callback: async (req: IncomingMessage, res: ServerResponse) => {
+      const config = await getWorkerConfig(configPath)
+
+      const signals = join(cwd, config.dist, 'signals.jsonl')
+      const stream = createConsoleStreamWrapper(signals)
+
+      const opts = {
+        config,
+        stream,
+        validator: (config: WorkerConfig) => parse(WorkerConfigSchema, config),
+      }
+
+      let handler
+      try {
+        handler = createHandler(opts)
+      } catch (error) {
+        return send(res, 500, {message: 'not configured to accept requests'})
+      }
+
+      const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
+      const path = url.pathname
+      const headers = req.headers
+      const body = await readBody(req)
+      const query = Object.fromEntries(url.searchParams)
+      const method = req.method
+
+      const data = {
+        path,
+        method,
+        headers,
+        query,
+        body,
+      }
+
+      try {
+        const result = await handler({
+          cwd,
+          data,
+          env: {},
+        })
+
+        if (result.error) {
+          return send(res, 400, result)
+        } else {
+          return send(res, 200, result)
+        }
+      } catch (error) {
+        console.log(error)
+        return send(res, 500, {
+          message: 'system error',
+        })
+      }
+    },
+  }
+}
+
 export async function createServer(opts: {
   concurrency?: number
   env?: Record<string, unknown>
@@ -75,56 +141,20 @@ export async function createServer(opts: {
     throw new Error('expected config path and cwd')
   }
 
-  // preload
-  function hashConfig(config: any): string {
-    return createHash('sha256').update(JSON.stringify(config)).digest('hex')
-  }
-
-  function createHandlerWrapper(config: WorkerConfig) {
-    return createHandler(config, (config: WorkerConfig) => {
-      return parse(WorkerConfigSchema, config)
-    })
-  }
-
-  const {createHandler} = resolveDependency('@xgsd/workers', cwd)
-
-  let config = await getWorkerConfig(configPath)
-  let hash = hashConfig(config)
-  let handler = createHandlerWrapper(config)
+  const transport = await createHttpTransporter({configPath, cwd})
 
   return http.createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
 
+    return transport.callback(req, res)
+    /*
     if (url.pathname === '/health') {
       return send(res, 200, {ok: true})
     }
 
     if (url.pathname === '/run' && req.method === 'POST') {
       const body = await readBody(req)
-      // TODO: cache this
       const config = (await getWorkerConfig(configPath)) as WorkerConfig
-
-      const {strategy} = config.http?.cache!
-
-      if (strategy === 'always') {
-        console.log(`[http cache] using cache config as cache.strategy = always`)
-      }
-
-      if (!strategy || strategy === 'never') {
-        console.log(`[http cache] always refreshing config as cache.strategy = never`)
-        handler = createHandlerWrapper(config)
-      }
-
-      if (strategy === 'change') {
-        const cmp = hashConfig(config)
-
-        if (cmp !== hash) {
-          console.log(`[http cache] config change detected, config refreshed.`)
-          handler = createHandlerWrapper(config)
-        } else {
-          console.log(`[http cache] no config change detected, nothing to refresh.`)
-        }
-      }
 
       if (!config) {
         return send(res, 404, {
@@ -149,6 +179,6 @@ export async function createServer(opts: {
     return send(res, 404, {
       ok: false,
       error: 'Not found',
-    })
+    })*/
   })
 }
