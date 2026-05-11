@@ -21,12 +21,18 @@ export default class Run extends Command {
     }),
 
     config: Flags.string({char: 'c', required: true}),
+
+    stdout: Flags.boolean({
+      char: 'o',
+      required: false,
+      description:
+        "when true, signals are piped to stdout vs stored to file (note: without this option you'll still see signal output)",
+    }),
   }
 
   public async run(): Promise<any> {
     const {args, flags} = await this.parse(Run)
 
-    const start = performance.now()
     const {data, environment} = flags
 
     const configPath = resolve(flags.config)
@@ -52,7 +58,7 @@ export default class Run extends Command {
     const {createHandler} = resolveDependency('@xgsd/workers', cwd)
 
     const signals = join(cwd, config.dist, 'signals.jsonl')
-    const stream = createConsoleStreamWrapper(signals)
+    const stream = flags.stdout ? process.stdout : createConsoleStreamWrapper(signals)
 
     const opts = {
       config,
@@ -63,20 +69,11 @@ export default class Run extends Command {
     try {
       const handler = createHandler(opts)
 
-      const result = await handler({
+      await handler({
         data,
         env,
         cwd,
       })
-
-      const dt = result?.duration ?? performance.now() - start
-      this.log(`[cli] execution completed in ${dt.toFixed(2)} ms`)
-
-      if (typeof result === 'object') {
-        this.logJson(result)
-      } else {
-        this.log(result ?? 'no output data')
-      }
     } catch (error: any) {
       console.log('fatal error occurred')
       console.log(error)
