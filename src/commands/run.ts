@@ -78,7 +78,7 @@ export default class Run extends Command {
 
     const signals = join(cwd, config.dist, 'signals.jsonl')
 
-    let stream: any = createWriteStream(signals)
+    let stream: any = createWriteStream(signals, {flags: 'a'})
     if (flags.stdout) {
       stream = process.stdout
     }
