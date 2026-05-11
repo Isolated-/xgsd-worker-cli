@@ -6,18 +6,16 @@
   "bin": {
     "worker": "./bin/run.js"
   },
+  "type": "module",
   "bugs": "https://github.com/Isolated-/xgsd-worker-cli/issues",
   "dependencies": {
     "@oclif/core": "^4",
     "@oclif/plugin-version": "^2.2.43",
-    "@xgsd/workers": "0.1.2",
+    "@xgsd/engine": "^1.0.0-stable",
+    "@xgsd/workers": "../xgsd-workers",
+    "esbuild": "^0.28.0",
     "fs-extra": "^11.3.5",
     "valibot": "^1.4.0"
-  },
-  "peerDependencies": {
-    "@xgsd/engine": "^1.0.0-stable",
-    "@xgsd/workers": "^0.1.2",
-    "esbuild": "^0.28.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1",

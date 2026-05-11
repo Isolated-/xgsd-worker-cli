@@ -1,8 +1,9 @@
 import {Args, Command, Flags} from '@oclif/core'
-import {createServer} from '../api/server'
+import {createServer} from '../api/server.js'
 import path, {dirname, join, resolve} from 'path'
 import {fork, spawn} from 'child_process'
-import {pathExistsSync, readFileSync, rmSync} from 'fs-extra'
+import {pathExistsSync} from 'fs-extra/esm'
+import {readFileSync, rmSync} from 'fs'
 
 export function isBackgroundProcessRunning(path: string, pid?: number): number | boolean {
   function heartbeat(pid: number): number | boolean {

@@ -1,5 +1,5 @@
 import {createRequire} from 'module'
-import fs from 'fs-extra'
+import fs from 'fs-extra/esm'
 import {join} from 'path'
 import {createWriteStream} from 'fs'
 
@@ -10,19 +10,6 @@ export async function getWorkerConfig(path: string): Promise<any | null> {
 
   // validate it (at some stage)
   return fs.readJson(path)
-}
-
-// this may diverge from the version inside @xgsd/workers
-// but it avoids needing to depend directly
-export function resolveDependency(dependency: string, projectRoot: string): any {
-  try {
-    const require = createRequire(join(projectRoot, 'package.json'))
-    return require(dependency)
-  } catch {}
-
-  throw new Error(
-    `Could not resolve ${dependency}.\nInstall it with \`yarn add ${dependency}\`.\nPath: ${projectRoot}.`,
-  )
 }
 
 export const createConsoleStreamWrapper = (path: string, opts: {mode: 'write' | 'append'} = {mode: 'append'}) => {
@@ -47,6 +34,7 @@ export const createConsoleStreamWrapper = (path: string, opts: {mode: 'write' | 
 }
 
 import {readFileSync, existsSync} from 'fs'
+import {fileURLToPath} from 'url'
 
 async function readStdin(): Promise<string> {
   return new Promise((resolve) => {

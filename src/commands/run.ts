@@ -1,10 +1,11 @@
 import {Command, Flags} from '@oclif/core'
 import {dirname, join, resolve} from 'path'
-import {createConsoleStreamWrapper, getWorkerConfig, resolveDependency, resolveInput} from '../util'
+import {createConsoleStreamWrapper, getWorkerConfig, resolveInput} from '../util.js'
 import {WorkerConfig} from '@xgsd/workers'
 import {parse} from 'valibot'
-import {WorkerConfigSchema} from '../validation'
+import {WorkerConfigSchema} from '../validation.js'
 import {createWriteStream} from 'fs'
+import {createHandler} from '@xgsd/workers'
 
 export default class Run extends Command {
   static override description = 'Manually activates your Worker and streams logs to console'
@@ -74,9 +75,7 @@ export default class Run extends Command {
       this.error(`config not found at ${configPath}`)
     }
 
-    const {createHandler} = resolveDependency('@xgsd/workers', cwd)
-
-    const signals = join(cwd, config.dist, 'signals.jsonl')
+    const signals = join(cwd, config.dist ?? '.xgsd', 'signals.jsonl')
 
     let stream: any = createWriteStream(signals, {flags: 'a'})
     if (flags.stdout) {
@@ -94,7 +93,7 @@ export default class Run extends Command {
     }
 
     try {
-      const handler = createHandler(opts)
+      const handler = createHandler(opts as any)
 
       if (flags.input) this.logJson(data)
 

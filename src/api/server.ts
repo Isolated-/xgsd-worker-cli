@@ -1,13 +1,14 @@
 import http, {IncomingMessage, ServerResponse} from 'http'
 import {URL} from 'url'
-import {createConsoleStreamWrapper, getWorkerConfig, resolveDependency} from '../util'
+import {createConsoleStreamWrapper, getWorkerConfig} from '../util.js'
 import {writeFileSync} from 'fs'
-import {ensureDirSync} from 'fs-extra'
-import {basename, dirname, join} from 'path'
+import {ensureDirSync} from 'fs-extra/esm'
+import {dirname, join} from 'path'
 import {WorkerConfig} from '@xgsd/workers'
-import {WorkerConfigSchema} from '../validation'
+import {WorkerConfigSchema} from '../validation.js'
 import {parse} from 'valibot'
-import {createHash} from 'crypto'
+import {createHandler} from '@xgsd/workers'
+
 type Json = Record<string, any>
 
 function readBody(req: IncomingMessage): Promise<Json> {
@@ -67,7 +68,6 @@ type Opts = {
 }
 
 async function createHttpTransporter(opts: Opts) {
-  const {createHandler} = resolveDependency('@xgsd/workers', opts.cwd)
   const {cwd, configPath} = opts
 
   return {
@@ -75,7 +75,7 @@ async function createHttpTransporter(opts: Opts) {
       const config = await getWorkerConfig(configPath)
 
       const signals = join(cwd, config.dist, 'signals.jsonl')
-      const stream = createConsoleStreamWrapper(signals)
+      const stream = createConsoleStreamWrapper(signals) as any
 
       const opts = {
         config,
@@ -85,7 +85,7 @@ async function createHttpTransporter(opts: Opts) {
 
       let handler
       try {
-        handler = createHandler(opts)
+        handler = createHandler(opts as any)
       } catch (error) {
         return send(res, 500, {message: 'not configured to accept requests'})
       }

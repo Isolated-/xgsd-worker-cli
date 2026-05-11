@@ -1,4 +1,4 @@
-import {startDaemon} from './server'
+import {startDaemon} from './server.js'
 
 startDaemon({
   //apiKey: process.env.XGSD_API_KEY,
