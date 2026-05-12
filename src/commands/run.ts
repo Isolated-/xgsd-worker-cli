@@ -1,11 +1,10 @@
 import {Command, Flags} from '@oclif/core'
 import {dirname, join, resolve} from 'path'
 import {createConsoleStreamWrapper, getWorkerConfig, resolveInput} from '../util.js'
-import {WorkerConfig} from '@xgsd/workers'
 import {parse} from 'valibot'
 import {WorkerConfigSchema} from '../validation.js'
 import {createWriteStream} from 'fs'
-import {createHandler} from '@xgsd/workers'
+import {createTransport} from '@xgsd/workers'
 
 export default class Run extends Command {
   static override description = 'Manually activates your Worker and streams logs to console'
@@ -22,7 +21,11 @@ export default class Run extends Command {
       multipleNonGreedy: false,
     }),
 
-    config: Flags.string({char: 'c', required: true}),
+    worker: Flags.string({
+      char: 'w',
+      default: 'worker.js',
+      description: 'path to your worker code (defaults to worker.js)',
+    }),
 
     stdout: Flags.boolean({
       char: 'O',
@@ -54,8 +57,7 @@ export default class Run extends Command {
 
     const {environment} = flags
 
-    const configPath = resolve(flags.config)
-    const cwd = resolve(dirname(flags.config))
+    const entry = resolve(flags.worker)
     const data = await resolveInput(flags.data)
 
     let env: Record<string, any> = {}
@@ -70,14 +72,9 @@ export default class Run extends Command {
       env[key] = value
     })
 
-    const config = await getWorkerConfig(configPath)
-    if (!config) {
-      this.error(`config not found at ${configPath}`)
-    }
-
-    const signals = join(cwd, config.dist ?? '.xgsd', 'signals.jsonl')
-
+    const signals = join(process.cwd(), 'signals.jsonl')
     let stream: any = createWriteStream(signals, {flags: 'a'})
+
     if (flags.stdout) {
       stream = process.stdout
     }
@@ -86,27 +83,29 @@ export default class Run extends Command {
       stream = createConsoleStreamWrapper(signals)
     }
 
-    const opts = {
-      config,
+    const transport = createTransport({
+      entry,
       stream,
-      validator: (config: WorkerConfig) => parse(WorkerConfigSchema, config),
+      limits: {
+        ttl: 15000,
+        memory: 128,
+      },
+    })
+
+    if (flags.input && !flags.json) {
+      this.logJson(data)
     }
 
     try {
-      const handler = createHandler(opts as any)
+      const result = await transport({data, env})
 
-      if (flags.input) this.logJson(data)
+      if (flags.output && !flags.json) {
+        this.logJson(result)
+      }
 
-      const output = await handler({
-        data,
-        env,
-        cwd,
-      })
-
-      if (flags.output) this.logJson(output)
+      return result
     } catch (error: any) {
-      console.log('fatal error occurred')
-      console.log(error)
+      this.error(`${error.message} (${error.code ?? 'UNKNOWN'})`)
     }
   }
 }

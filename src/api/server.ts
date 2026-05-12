@@ -1,13 +1,10 @@
 import http, {IncomingMessage, ServerResponse} from 'http'
 import {URL} from 'url'
-import {createConsoleStreamWrapper, getWorkerConfig} from '../util.js'
+import {createConsoleStreamWrapper} from '../util.js'
 import {writeFileSync} from 'fs'
 import {ensureDirSync} from 'fs-extra/esm'
-import {dirname, join} from 'path'
-import {WorkerConfig} from '@xgsd/workers'
-import {WorkerConfigSchema} from '../validation.js'
-import {parse} from 'valibot'
-import {createHandler} from '@xgsd/workers'
+import {dirname, join, resolve} from 'path'
+import {createTransport, StreamLike} from '@xgsd/workers'
 
 type Json = Record<string, any>
 
@@ -63,33 +60,19 @@ export async function startDaemon(opts: any) {
 }
 
 type Opts = {
-  cwd: string
-  configPath: string
+  entry: string
 }
 
 async function createHttpTransporter(opts: Opts) {
-  const {cwd, configPath} = opts
+  const cwd = resolve(dirname(opts.entry))
+  const stream = createConsoleStreamWrapper(join(cwd, 'signals.jsonl'), {mode: 'append'}) as StreamLike
+  const transport = createTransport({
+    entry: opts.entry,
+    stream,
+  })
 
   return {
     callback: async (req: IncomingMessage, res: ServerResponse) => {
-      const config = await getWorkerConfig(configPath)
-
-      const signals = join(cwd, config.dist, 'signals.jsonl')
-      const stream = createConsoleStreamWrapper(signals) as any
-
-      const opts = {
-        config,
-        stream,
-        validator: (config: WorkerConfig) => parse(WorkerConfigSchema, config),
-      }
-
-      let handler
-      try {
-        handler = createHandler(opts as any)
-      } catch (error) {
-        return send(res, 500, {message: 'not configured to accept requests'})
-      }
-
       const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
       const path = url.pathname
       const headers = req.headers
@@ -106,79 +89,25 @@ async function createHttpTransporter(opts: Opts) {
       }
 
       try {
-        const result = await handler({
-          cwd,
-          data,
-          env: {},
-        })
+        const result = await transport({data})
 
-        if (result.error) {
-          return send(res, 400, result)
-        } else {
-          return send(res, 200, result)
-        }
-      } catch (error) {
-        console.log(error)
-        return send(res, 500, {
-          message: 'system error',
-        })
+        const status = result.ok ? 200 : 400
+        return send(res, status, result)
+      } catch {
+        return send(res, 500, {message: 'something has gone wrong'})
       }
     },
   }
 }
 
-export async function createServer(opts: {
-  concurrency?: number
-  env?: Record<string, unknown>
-  cwd?: string
-  configPath?: string
-}) {
-  const {configPath, cwd} = opts
+export async function createServer(opts: {entry: string}) {
+  const {entry} = opts
 
-  console.log(`[http] bound to ${cwd}`)
+  console.log(`[http] bound to ${entry}`)
 
-  if (!configPath || !cwd) {
-    throw new Error('expected config path and cwd')
-  }
-
-  const transport = await createHttpTransporter({configPath, cwd})
+  const transport = await createHttpTransporter({entry})
 
   return http.createServer(async (req, res) => {
-    const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
-
     return transport.callback(req, res)
-    /*
-    if (url.pathname === '/health') {
-      return send(res, 200, {ok: true})
-    }
-
-    if (url.pathname === '/run' && req.method === 'POST') {
-      const body = await readBody(req)
-      const config = (await getWorkerConfig(configPath)) as WorkerConfig
-
-      if (!config) {
-        return send(res, 404, {
-          error: {
-            message: `could not found at ${configPath}`,
-          },
-        })
-      }
-
-      const result = await handler({
-        data: body ?? null,
-        env: opts.env,
-        cwd,
-      })
-
-      // TODO: allow user to return status code
-      // use 500 for misconfigs/user errors
-      const status = result.code ? result.code : result.ok ? 200 : 400
-      return send(res, status, result)
-    }
-
-    return send(res, 404, {
-      ok: false,
-      error: 'Not found',
-    })*/
   })
 }

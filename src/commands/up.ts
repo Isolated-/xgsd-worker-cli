@@ -4,6 +4,7 @@ import path, {dirname, join, resolve} from 'path'
 import {fork, spawn} from 'child_process'
 import {pathExistsSync} from 'fs-extra/esm'
 import {readFileSync, rmSync} from 'fs'
+import {fileURLToPath} from 'url'
 
 export function isBackgroundProcessRunning(path: string, pid?: number): number | boolean {
   function heartbeat(pid: number): number | boolean {
@@ -46,7 +47,6 @@ export default class Up extends Command {
   static override flags = {
     port: Flags.integer({char: 'p', default: 3000}),
 
-    config: Flags.string({char: 'c', required: true}),
     detached: Flags.boolean({char: 'd', default: false}),
     force: Flags.boolean({char: 'f', default: false}),
 
@@ -55,14 +55,15 @@ export default class Up extends Command {
       description: 'use this flag to stop background process',
       default: false,
     }),
+
+    worker: Flags.string({char: 'w', default: 'worker.js'}),
   }
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(Up)
     const port = flags.port
 
-    const configPath = resolve(flags.config)
-    const cwd = dirname(configPath)
+    const entry = resolve(flags.worker)
 
     // this prevents many services/workers starting
     // which is ok for an example CLI
@@ -86,7 +87,7 @@ export default class Up extends Command {
 
     if (flags.detached) {
       if (pid && !flags.force) {
-        this.error('service is already running in the background.\nUse `worker up -c {path} -f`.')
+        this.error('service is already running in the background.\nUse `worker up -d -f`.')
       }
 
       if (pid && flags.force) {
@@ -96,25 +97,25 @@ export default class Up extends Command {
         } catch (error) {}
       }
 
-      const daemonPath = resolve(__dirname, '..', 'api', 'daemon.js')
+      const path = fileURLToPath(import.meta.url)
+      const daemonPath = resolve(path, '..', '..', 'api', 'daemon.js')
       const child = spawn(process.execPath, [daemonPath], {
         detached: true,
         stdio: 'ignore',
         env: {
-          ...process.env,
           XGSD_PORT: String(port),
           //XGSD_HOST: flags.host,
-          XGSD_CWD: cwd,
-          XGSD_CONFIG_PATH: configPath,
+          XGSD_ENTRY_PATH: entry,
           XGSD_PID_PATH: pidPath,
         },
       })
 
       this.log(`server is running in the background (pid: ${child.pid})`)
+      this.log(`[api] running on http://localhost:${port}`)
 
       child.unref()
     } else {
-      const server = await createServer({cwd, configPath})
+      const server = await createServer({entry})
 
       server.listen(port, () => {
         this.log(`[api] running on http://localhost:${port}`)
