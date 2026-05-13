@@ -1,6 +1,29 @@
 # `@xgsd/worker-cli`
 
-See the documentation for more info [**Documentation**](https://isolated-.github.io/xgsd-userdocs/workers)
+See the documentation for more info [**Documentation**](https://docs.xgsd.io).
+
+## Note
+
+This repo demonstrates a very basic working example of `@xgsd/workers` as a CLI and also an API.
+
+The API works like this:
+
+- `path`, `method`, `headers`, `body`, `query` properties are sent as `data`.
+
+You can use a transformer to change this:
+
+```js
+const transformer = async (ctx, next) => {
+  // unwrap http
+  ctx.data = ctx.data?.body ? ctx.data?.body : ctx.data
+
+  await next()
+
+  // optionally transform result
+}
+```
+
+At the moment it depends on `@xgsd/workers` meaning the version is fixed — this will be improved.
 
 ## Install
 
@@ -11,9 +34,10 @@ npm install -g @xgsd/worker-cli
 ## Commands
 
 <!-- commands -->
-* [`worker run`](#worker-run)
-* [`worker up`](#worker-up)
-* [`worker version`](#worker-version)
+
+- [`worker run`](#worker-run)
+- [`worker up`](#worker-up)
+- [`worker version`](#worker-version)
 
 ## `worker run`
 
@@ -85,4 +109,5 @@ FLAG DESCRIPTIONS
 ```
 
 _See code: [@oclif/plugin-version](https://github.com/oclif/plugin-version/blob/2.2.43/src/commands/version.ts)_
+
 <!-- commandsstop -->
